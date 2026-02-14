@@ -1,12 +1,8 @@
-# X Personal Analytics Skill
+# X Analytics Skill
 
-Your AI agent can't read Twitter. And when it tries via the API, it burns through $25 on a single prompt.
+Read-only X/Twitter skill for AI agents. Official API, no scraping. ~$1-2/month.
 
-This skill gives your agent read-only access to X — tweets, threads, mentions, analytics — for about **$1-2/month**. Smart caching means tweets are only fetched once, and budget controls make sure it stays that way. You set the daily limit, and the skill won't go over it.
-
-Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a SKILL.md. Official API only, no scraping, no suspension risk.
-
-> Agents: see [AGENTS.md](AGENTS.md) for command reference.
+Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a [SKILL.md](SKILL.md). Agents: see [AGENTS.md](AGENTS.md).
 
 ## What It Does
 
