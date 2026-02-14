@@ -22,7 +22,7 @@ git clone https://github.com/aaronnev/x-twitter-skill.git x-twitter
 
 Then follow the **[Setup Guide →](SETUP.md)** — walks you through creating an X Developer account, getting your API keys, and configuring your budget. Takes about 10 minutes.
 
-## Usage
+## How to Use
 
 ### Ask your agent
 
