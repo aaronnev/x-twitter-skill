@@ -1,8 +1,8 @@
 # X Analytics Skill
 
-Read-only X/Twitter skill for AI agents. Official API, no scraping. ~$1-2/month.
+Give your AI agent read-only access to your X account without blowing your API budget. Smart caching and budget controls keep it at **~$1-2/month**. Official API only, no scraping.
 
-Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a [SKILL.md](SKILL.md). Agents: see [AGENTS.md](AGENTS.md).
+Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a [SKILL.md](SKILL.md) · [AGENTS.md](AGENTS.md)
 
 ## What It Does
 
