@@ -19,7 +19,7 @@ Costs about **$1-2/month**.
 - **Follower tracking** — daily count with delta over time
 - **Accountability** — tells you if you're spending too much time on X
 - **Budget controls** — three modes (guarded / relaxed / unlimited), daily spend tracking, dry-run on every command
-- **Smart caching** — every tweet is stored locally on first fetch and never re-fetched. Incremental pulls mean only new content costs money. This is how it stays at ~$1-2/mo instead of $20+
+- **Smart caching** — every tweet is stored locally on first fetch and never re-fetched. Incremental pulls mean only new content costs money. This is how it stays at ~$1-2/mo instead of burning through $25 in a single session
 
 ## Getting Started
 
