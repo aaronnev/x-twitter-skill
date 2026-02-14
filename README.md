@@ -122,7 +122,7 @@ Reading long threads. A 500-tweet thread = ~5 paginated calls ($0.025).
 
 ## Roadmap
 
-- **Real-time mention streaming** via Filtered Stream — mentions pushed, not polled
+- **Search** — find tweets by keyword, filter by engagement, time, author
 - **Engagement velocity alerts** — flag posts getting unusual traction early
 - **Quote tweet detection** — surface when someone quotes your post
 - **Competitor watch** — track accounts, surface their top posts
