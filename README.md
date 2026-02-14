@@ -14,6 +14,10 @@ Works with any AI agent — [OpenClaw](https://openclaw.ai), Claude Code, Codex,
 - **Accountability**: Checks if you're spending too much time on X when you should be working
 - **Cost Optimized**: Persistent local store + incremental fetching = minimal API costs (~$1-2/mo)
 
+### Why Not Scraping / Bird CLI?
+
+X is actively detecting and suspending accounts that use automated scraping, cookie-based tools, or browser automation. The official API is the only safe path for programmatic access. This skill uses OAuth 1.0a with your own API keys — no cookies, no headless browsers, no risk.
+
 ## Setup
 
 See **[SETUP.md](SETUP.md)** for a detailed step-by-step guide including X Developer Console walkthrough, API credit loading, and budget configuration.
