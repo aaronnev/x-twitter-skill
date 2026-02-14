@@ -1,8 +1,8 @@
 # X (Twitter) Personal Analytics Skill
 
-Give your AI agent eyes on your X account — analytics, posts, mentions, followers — for ~$1-2/month. Official API only, no scraping, no suspension risk.
+Give your AI agent eyes on your X account — analytics, posts, mentions, followers — for ~$1-2/month. Official API only, no scraping, no suspension risk. Built after [@nikitabier confirmed](https://x.com/nikitabier/status/2022502068486074617) automated scraping will get accounts suspended — this skill uses only the official X API v2.
 
-Built after [@nikitabier confirmed](https://x.com/nikitabier/status/2022502068486074617) automated scraping will get accounts suspended. This skill uses only the official X API v2.
+<img src="assets/nikitabier-api-vs-scraping.png" alt="@nikitabier: Use the official API all you want. But any form of scraping or search that is automated will get caught currently." width="500">
 
 Works with any AI agent — [OpenClaw](https://openclaw.ai), Claude Code, Codex, or anything that reads a [SKILL.md](http://skill.md/).
 
@@ -13,12 +13,6 @@ Works with any AI agent — [OpenClaw](https://openclaw.ai), Claude Code, Codex,
 - **Follower Tracking**: Daily follower count with delta tracking over time
 - **Accountability**: Checks if you're spending too much time on X when you should be working
 - **Cost Optimized**: Persistent local store + incremental fetching = minimal API costs (~$1-2/mo)
-
-### Why Not Scraping / Bird CLI?
-
-X is actively detecting and suspending accounts that use automated scraping, cookie-based tools, or browser automation. The official API is the only safe path for programmatic access. This skill uses OAuth 1.0a with your own API keys — no cookies, no headless browsers, no risk.
-
-<img src="assets/nikitabier-api-vs-scraping.png" alt="@nikitabier: Use the official API all you want. But any form of scraping or search that is automated will get caught currently." width="500">
 
 ## Setup
 
