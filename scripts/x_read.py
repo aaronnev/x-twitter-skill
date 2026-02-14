@@ -28,6 +28,7 @@ TWEETS_PATH = DATA_DIR / "tweets.json"
 TWEET_FIELDS = [
     "created_at", "public_metrics", "text", "conversation_id",
     "in_reply_to_user_id", "referenced_tweets", "author_id",
+    "note_tweet",
 ]
 
 USER_FIELDS = ["username", "name", "public_metrics"]
@@ -80,8 +81,11 @@ def format_tweet_display(tweet_data: dict, authors: dict, indent: str = "") -> s
             date_str = created
     lines.append(f"{indent}@{handle} · {date_str}")
 
-    # Text
-    text = tweet_data.get("text", "")
+    # Text — use note_tweet for long-form posts (>280 chars)
+    note = tweet_data.get("note_tweet", {})
+    text = note.get("text", "") if note else ""
+    if not text:
+        text = tweet_data.get("text", "")
     for text_line in text.split("\n"):
         lines.append(f"{indent}{text_line}")
 
@@ -180,15 +184,18 @@ def cmd_read(args):
     ref_tweets = {}
     if resp.includes and "tweets" in resp.includes:
         for rt in resp.includes["tweets"]:
+            rt_note = getattr(rt, "note_tweet", None)
             ref_tweets[str(rt.id)] = {
                 "id": str(rt.id),
                 "text": rt.text,
                 "created_at": rt.created_at.isoformat() if rt.created_at else None,
                 "author_id": str(rt.author_id) if rt.author_id else "",
                 "metrics": dict(rt.public_metrics) if rt.public_metrics else {},
+                **({"note_tweet": rt_note} if rt_note else {}),
             }
 
     # Store the tweet
+    note_tweet = getattr(tweet, "note_tweet", None)
     tweet_data = {
         "id": str(tweet.id),
         "text": tweet.text,
@@ -196,6 +203,7 @@ def cmd_read(args):
         "author_id": str(tweet.author_id) if tweet.author_id else "",
         "conversation_id": str(tweet.conversation_id) if tweet.conversation_id else None,
         "metrics": dict(tweet.public_metrics) if tweet.public_metrics else {},
+        **({"note_tweet": note_tweet} if note_tweet else {}),
         "stored_at": datetime.now(timezone.utc).isoformat(),
     }
     store[str(tweet.id)] = tweet_data

@@ -13,7 +13,7 @@ DATA_DIR = CONFIG_DIR / "data"
 USAGE_PATH = DATA_DIR / "usage.json"
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 
 
 def load_config() -> dict | None:
