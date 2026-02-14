@@ -12,44 +12,20 @@ Personal X/Twitter analytics for [OpenClaw](https://openclaw.ai) — monitor you
 
 ## Setup
 
-### 1. Get X API Keys
+See **[SETUP.md](SETUP.md)** for a detailed step-by-step guide including X Developer Console walkthrough, API credit loading, and budget configuration.
 
-1. Go to [developer.x.com](https://developer.x.com)
-2. Create a project and app
-3. Generate: API Key, API Secret, Access Token, Access Token Secret, Bearer Token
-
-### 2. Install the Skill
+Quick version:
 
 ```bash
-# For OpenClaw
-cd ~/.openclaw/workspace/skills
+# 1. Clone the skill
+cd ~/.openclaw/workspace/skills  # or wherever you keep skills
 git clone https://github.com/aaronnev/x-twitter-skill.git x-twitter
 
-# Requires uv (Python package runner)
-# Install: curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+# 2. Run setup (requires uv: curl -LsSf https://astral.sh/uv/install.sh | sh)
+uv run scripts/x_setup.py
 
-### 3. Run Setup
-
-```bash
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_setup.py
-```
-
-The setup will:
-- Ask for your API keys (or import from `~/.openclaw/.env`)
-- Ask for your X handle
-- Let you pick a budget tier (lite/standard/intense)
-- Validate credentials
-- Save config to `~/.openclaw/skills-config/x-twitter/config.json`
-
-### 4. Test It
-
-```bash
-# Check your profile
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_user.py me
-
-# Pull recent posts
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py recent --max 5
+# 3. Test it
+uv run scripts/x_user.py me
 ```
 
 ## Cost
@@ -79,6 +55,8 @@ Typical monthly cost: **$0.60 - $1.50** for daily briefings.
 | `x_user.py me` | Your profile stats | ~$0.01 |
 | `x_user.py me --track` | Profile + save follower delta | ~$0.01 |
 | `x_user.py lookup USER` | Any user's profile | ~$0.01 |
+| `x_setup.py --spend-report` | Weekly spend summary | $0 |
+| Any command `--dry-run` | Preview cost without API call | $0 |
 
 ## How It Works
 
@@ -118,10 +96,13 @@ The agent can use this to nudge you back to work.
 ```
 x-twitter/
 ├── SKILL.md              # OpenClaw skill manifest
+├── AGENTS.md             # AI agent reference (machine-readable)
+├── SETUP.md              # Step-by-step setup walkthrough
 ├── README.md             # This file
+├── LICENSE               # MIT
 ├── .gitignore
 ├── scripts/
-│   ├── x_setup.py        # Credential setup + validation
+│   ├── x_setup.py        # Credential setup, validation, spend reports
 │   ├── x_timeline.py     # Posts + engagement + accountability
 │   ├── x_mentions.py     # Mentions and replies
 │   └── x_user.py         # Profile info + follower tracking
@@ -130,7 +111,7 @@ x-twitter/
 
 # Config (per-user, NOT in repo):
 ~/.openclaw/skills-config/x-twitter/
-├── config.json           # Credentials + settings
+├── config.json           # Credentials + settings (0600 permissions)
 └── data/
     ├── tweets.json       # Persistent tweet store
     ├── mentions.json     # Persistent mention store

@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+
+# User config and data (contains API keys)
+config.json
+data/
+.env

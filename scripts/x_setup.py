@@ -11,7 +11,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import tweepy
@@ -165,6 +165,72 @@ def cmd_setup(args):
         print(f"  The skill pulls incrementally (newest first), so daily use is ~$0.02/day.")
 
 
+def load_usage() -> dict:
+    """Load usage data."""
+    DATA_DIR = CONFIG_DIR / "data"
+    USAGE_PATH = DATA_DIR / "usage.json"
+    if USAGE_PATH.exists():
+        return json.loads(USAGE_PATH.read_text())
+    return {}
+
+
+def cmd_spend_report(args):
+    """Show weekly spend summary."""
+    if not CONFIG_PATH.exists():
+        print(f"No config found. Run setup first.")
+        sys.exit(1)
+
+    config = json.loads(CONFIG_PATH.read_text())
+    usage = load_usage()
+    if not usage:
+        print("No usage data yet. Make some API calls first.")
+        return
+
+    today = datetime.now(timezone.utc)
+    daily_budget = config.get("daily_budget", 0.10)
+
+    # Determine period
+    days = args.days if args.days else 7
+    print(f"Spend Report — last {days} days")
+    print("=" * 45)
+
+    total_cost = 0.0
+    total_tweet_reads = 0
+    total_user_reads = 0
+    day_count = 0
+
+    for i in range(days):
+        day = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+        if day in usage:
+            d = usage[day]
+            cost = d.get("est_cost", 0.0)
+            tr = d.get("tweet_reads", 0)
+            ur = d.get("user_reads", 0)
+            total_cost += cost
+            total_tweet_reads += tr
+            total_user_reads += ur
+            day_count += 1
+            pct = (cost / daily_budget * 100) if daily_budget > 0 else 0
+            bar = "#" * min(int(pct / 5), 20)
+            print(f"  {day}: ${cost:.3f} / ${daily_budget:.2f} ({pct:.0f}%) {bar}")
+        else:
+            print(f"  {day}: $0.000 / ${daily_budget:.2f} (0%)")
+
+    print()
+    print(f"Total:     ${total_cost:.3f}")
+    print(f"Daily avg: ${total_cost / max(day_count, 1):.3f}")
+    budget_total = daily_budget * days
+    print(f"Budget:    ${budget_total:.2f} ({days}d x ${daily_budget:.2f})")
+    pct_used = (total_cost / budget_total * 100) if budget_total > 0 else 0
+    print(f"Used:      {pct_used:.1f}% of budget")
+    print(f"API calls: {total_tweet_reads} tweet reads, {total_user_reads} user reads")
+
+    # Monthly projection
+    if day_count > 0:
+        monthly = (total_cost / day_count) * 30
+        print(f"\nProjected monthly: ~${monthly:.2f}")
+
+
 def cmd_check(args):
     """Validate existing credentials."""
     if not CONFIG_PATH.exists():
@@ -215,9 +281,13 @@ def main():
     parser.add_argument("--reconfig", action="store_true", help="Reconfigure existing setup")
     parser.add_argument("--handle", help="X handle (without @)")
     parser.add_argument("--tier", choices=["lite", "standard", "intense"], help="Budget tier")
+    parser.add_argument("--spend-report", action="store_true", help="Show spend summary")
+    parser.add_argument("--days", type=int, default=7, help="Days for spend report (default: 7)")
     args = parser.parse_args()
 
-    if args.check:
+    if args.spend_report:
+        cmd_spend_report(args)
+    elif args.check:
         cmd_check(args)
     elif args.show:
         cmd_show(args)

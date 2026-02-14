@@ -29,7 +29,7 @@ NOT for: searching X for topics (use x-research skill), posting tweets, account 
 
 Run setup first (imports credentials from `~/.openclaw/.env` or prompts interactively):
 ```bash
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_setup.py
+uv run scripts/x_setup.py
 ```
 
 ## Commands
@@ -38,58 +38,74 @@ uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_setup.py
 
 ```bash
 # Recent posts with engagement metrics
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py recent
+uv run scripts/x_timeline.py recent
 
 # Last 5 posts
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py recent --max 5
+uv run scripts/x_timeline.py recent --max 5
 
 # Posts from last 24 hours
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py recent --hours 24
+uv run scripts/x_timeline.py recent --hours 24
 
 # Top posts by engagement (from local store, no API call)
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py top --days 7
+uv run scripts/x_timeline.py top --days 7
 
 # Refresh metrics for a specific tweet
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py refresh TWEET_ID
+uv run scripts/x_timeline.py refresh TWEET_ID
 
 # Accountability check — are they on X right now?
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_timeline.py activity
+uv run scripts/x_timeline.py activity
 ```
 
 ### Mentions — who's talking to/about you
 
 ```bash
 # Recent mentions
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_mentions.py recent
+uv run scripts/x_mentions.py recent
 
 # Mentions from last 24 hours
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_mentions.py recent --hours 24
+uv run scripts/x_mentions.py recent --hours 24
 
 # Mentions with context (shows what they replied to — costs extra)
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_mentions.py recent --context
+uv run scripts/x_mentions.py recent --context
 ```
 
 ### User Profile — stats + follower tracking
 
 ```bash
 # Your profile stats
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_user.py me
+uv run scripts/x_user.py me
 
 # Track follower changes over time
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_user.py me --track
+uv run scripts/x_user.py me --track
 
 # Look up another user
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_user.py lookup someuser
+uv run scripts/x_user.py lookup someuser
 ```
 
-### Setup
+### Setup & Spend
 
 ```bash
 # Validate credentials
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_setup.py --check
+uv run scripts/x_setup.py --check
 
 # Show config (secrets redacted)
-uv run ~/.openclaw/workspace/skills/x-twitter/scripts/x_setup.py --show
+uv run scripts/x_setup.py --show
+
+# Weekly spend summary
+uv run scripts/x_setup.py --spend-report
+
+# 30-day spend report
+uv run scripts/x_setup.py --spend-report --days 30
+```
+
+### Cost Control Flags (all scripts)
+
+```bash
+# Preview cost without making the API call
+uv run scripts/x_timeline.py --dry-run recent
+
+# Override budget guard
+uv run scripts/x_timeline.py --force recent
 ```
 
 ## Workflows
@@ -143,6 +159,8 @@ uv run x_user.py me --track
 | `user me` | $0.01 | Profile check, once per day is plenty |
 | `user me --track` | $0.01 | Morning brief only — saves follower delta |
 | `user lookup` | $0.01 | Only when user asks about another account |
+| `--spend-report` | **$0** | Check spending anytime |
+| `--dry-run` | **$0** | Preview cost before any command |
 
 ### Budget Tiers
 
