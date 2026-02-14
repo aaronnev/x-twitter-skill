@@ -164,6 +164,18 @@ uv run scripts/x_timeline.py --dry-run recent
 uv run scripts/x_setup.py --spend-report
 ```
 
+## How Costs Scale
+
+Cost scales with **check frequency**, not content volume. Whether you have 100 or 100K followers, each API call costs the same.
+
+| Usage Pattern | Daily Cost | Monthly Cost |
+|--------------|-----------|-------------|
+| Morning briefing only | $0.02 | $0.60 |
+| Briefing + a few checks | $0.04 | $1.20 |
+| Heavy monitoring | $0.10 | $3.00 |
+
+The biggest cost driver is curiosity — reading threads, checking mentions, looking up other users. Posting is free.
+
 ## Troubleshooting
 
 ### "401 Unauthorized"
@@ -181,6 +193,8 @@ uv run scripts/x_setup.py --spend-report
 ### "Daily budget exceeded"
 - This is the skill protecting your wallet. Wait until tomorrow, or:
   - Use `--force` to override for one command
+  - Use `--no-budget` to skip all budget checks/warnings for one command
+  - Switch to relaxed mode (warns but never blocks): `uv run scripts/x_setup.py --budget-mode relaxed`
   - Reconfigure with a higher tier: `uv run scripts/x_setup.py --reconfig --tier intense`
 
 ### "No config found"

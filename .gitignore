@@ -7,3 +7,4 @@ __pycache__/
 config.json
 data/
 .env
+scripts/x_post.py

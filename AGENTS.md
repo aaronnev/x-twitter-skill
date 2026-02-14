@@ -13,7 +13,20 @@ uv run scripts/x_setup.py  # Interactive setup — imports keys, validates, pick
 
 ## Commands
 
-All scripts use `uv run` (auto-installs dependencies). Run from the skill directory. All commands support `--dry-run` to preview cost without making API calls.
+All scripts use `uv run` (auto-installs dependencies). Run from the skill directory. All commands support `--dry-run` to preview cost and `--no-budget` to skip budget checks.
+
+### x_briefing.py — Combined Morning Briefing
+
+```bash
+# Full briefing: posts + mentions + profile (~$0.020)
+uv run scripts/x_briefing.py
+
+# Custom lookback period
+uv run scripts/x_briefing.py --hours 48
+
+# Preview cost
+uv run scripts/x_briefing.py --dry-run
+```
 
 ### x_timeline.py — Your Posts + Engagement
 
@@ -47,6 +60,34 @@ uv run scripts/x_mentions.py recent --max 10 --hours 24
 uv run scripts/x_mentions.py recent --context
 ```
 
+### x_read.py — Read Any Tweet or Thread
+
+```bash
+# Read a tweet by URL or ID (~$0.005)
+uv run scripts/x_read.py https://x.com/user/status/123456
+uv run scripts/x_read.py 123456
+
+# Fetch full thread (~$0.005-0.010)
+uv run scripts/x_read.py 123456 --thread
+
+# Preview cost
+uv run scripts/x_read.py --dry-run https://x.com/user/status/123456
+```
+
+### x_bookmarks.py — Bookmarks
+
+```bash
+# List bookmarks (~$0.005)
+uv run scripts/x_bookmarks.py list
+uv run scripts/x_bookmarks.py list --max 10
+
+# Bookmark a post ($0 — free write action)
+uv run scripts/x_bookmarks.py add TWEET_ID
+
+# Remove a bookmark ($0 — free write action)
+uv run scripts/x_bookmarks.py remove TWEET_ID
+```
+
 ### x_user.py — Profile & Follower Tracking
 
 ```bash
@@ -75,6 +116,12 @@ uv run scripts/x_setup.py --spend-report
 # 30-day spend report
 uv run scripts/x_setup.py --spend-report --days 30
 
+# Set budget mode
+uv run scripts/x_setup.py --budget-mode guarded|relaxed|unlimited
+
+# Print version
+uv run scripts/x_setup.py --version
+
 # Reconfigure (change tier, re-enter keys)
 uv run scripts/x_setup.py --reconfig
 ```
@@ -83,16 +130,20 @@ uv run scripts/x_setup.py --reconfig
 
 | Task | Command | Cost |
 |------|---------|------|
+| Morning briefing | `x_briefing.py` | $0.020 |
 | "How are my posts doing?" | `x_timeline.py recent --max 5` | $0.005 |
 | "What was my best post this week?" | `x_timeline.py top --days 7` | **FREE** |
 | "Any new replies or mentions?" | `x_mentions.py recent` | $0.005 |
+| "Read this tweet" (user sends URL) | `x_read.py <URL>` | $0.005 |
+| "Show me the full thread" | `x_read.py <URL> --thread` | $0.005-0.010 |
+| "Save this tweet" | `x_bookmarks.py add <ID>` | **FREE** |
+| "Show my bookmarks" | `x_bookmarks.py list` | $0.005 |
 | "How many followers do I have?" | `x_user.py me` | $0.010 |
 | "Am I on X too much?" | `x_timeline.py activity` | $0.005 |
 | "How's that specific tweet doing?" | `x_timeline.py refresh <ID>` | $0.005 |
 | "Look up @someone" | `x_user.py lookup someone` | $0.010 |
 | "How much have I spent on API?" | `x_setup.py --spend-report` | **FREE** |
 | "What would this cost?" | any command `--dry-run` | **FREE** |
-| Morning briefing | `recent --hours 24` + `mentions recent --hours 24` + `user me --track` | ~$0.020 |
 
 ## Cost Discipline — CRITICAL
 
@@ -103,17 +154,25 @@ Every command costs real money. Follow these rules:
 3. **Don't use `--context` on mentions by default** — costs extra per reply thread
 4. **Use `--max 5` for quick checks** — don't pull 20 when 5 suffices
 5. **Use `--hours 24` for briefings** — don't pull the full timeline
-6. **Never run all scripts unprompted** — start with one, add more only if asked
+6. **Use `x_briefing.py` for morning briefings** — not 3 separate commands
 7. **Use `--dry-run` when uncertain** — shows cost without spending
 8. **Watch budget warnings** — scripts warn at 50%, 80%, and 100% of daily budget
 9. **Never loop or retry** — if a command fails, report the error
+10. **x_read.py caches tweets** — repeated reads of the same tweet are free from local store
+
+## Budget Modes
+
+Configurable via `x_setup.py --budget-mode`:
+- **guarded** (default): Warn at 50/80/100%, block at limit
+- **relaxed**: Warn only, never block
+- **unlimited**: No warnings, no blocks
 
 ## Budget Warnings
 
-Scripts automatically warn at these thresholds:
+Scripts automatically warn at these thresholds (in guarded/relaxed mode):
 - **50%**: `[i] Budget note: $0.050 / $0.10 (50%) used today`
 - **80%**: `[!] Budget warning: $0.080 / $0.10 (80%) — approaching limit`
-- **100%**: `[!] BUDGET EXCEEDED` — script blocks (use `--force` to override)
+- **100%**: `[!] BUDGET EXCEEDED` — script blocks in guarded mode (use `--force` to override)
 
 When blocked, tell the user: "Daily X API budget reached. Use --force to override, or wait until tomorrow."
 
@@ -125,6 +184,7 @@ When blocked, tell the user: "Daily X API budget reached. Use --force to overrid
 - Expensive commands flagged: `[$$$ EXPENSIVE]`
 - Budget warnings: `[!] Budget warning: ...` or `[i] Budget note: ...`
 - Tweet links: `https://x.com/handle/status/ID`
+- High-follower mentions flagged: `[HIGH-PROFILE]` (>10K followers)
 
 ## Error States
 
@@ -138,7 +198,8 @@ When blocked, tell the user: "Daily X API budget reached. Use --force to overrid
 ## Data Persistence
 
 Config and data live at `~/.openclaw/skills-config/x-twitter/`:
-- `config.json` — credentials, budget tier, follower history
+- `config.json` — credentials, budget tier, budget mode, follower history
 - `data/tweets.json` — persistent tweet store (never re-fetched)
 - `data/mentions.json` — persistent mention store
+- `data/bookmarks.json` — persistent bookmark store
 - `data/usage.json` — daily API cost tracking by date

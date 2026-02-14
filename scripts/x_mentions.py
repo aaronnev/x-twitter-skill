@@ -15,11 +15,14 @@ from pathlib import Path
 
 import tweepy
 
-CONFIG_DIR = Path.home() / ".openclaw" / "skills-config" / "x-twitter"
-CONFIG_PATH = CONFIG_DIR / "config.json"
-DATA_DIR = CONFIG_DIR / "data"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from x_common import (
+    DATA_DIR, USAGE_PATH, load_config, save_config, get_client,
+    track_usage, budget_warning, check_budget,
+    format_time, time_ago, format_number, handle_api_error,
+)
+
 MENTIONS_PATH = DATA_DIR / "mentions.json"
-USAGE_PATH = DATA_DIR / "usage.json"
 
 TWEET_FIELDS = [
     "created_at", "public_metrics", "text", "author_id",
@@ -27,32 +30,6 @@ TWEET_FIELDS = [
 ]
 
 USER_FIELDS = ["username", "name", "verified", "public_metrics"]
-
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-
-
-def load_config() -> dict | None:
-    if not CONFIG_PATH.exists():
-        print(f"Error: No config found at {CONFIG_PATH}")
-        print(f"Run: uv run {SCRIPT_DIR / 'x_setup.py'}")
-        return None
-    return json.loads(CONFIG_PATH.read_text())
-
-
-def save_config(config: dict):
-    CONFIG_PATH.write_text(json.dumps(config, indent=2))
-
-
-def get_client(config: dict) -> tweepy.Client:
-    return tweepy.Client(
-        bearer_token=config.get("bearer_token"),
-        consumer_key=config["api_key"],
-        consumer_secret=config["api_secret"],
-        access_token=config["access_token"],
-        access_token_secret=config["access_secret"],
-        wait_on_rate_limit=True,
-    )
 
 
 def load_store() -> dict:
@@ -66,86 +43,13 @@ def save_store(store: dict):
     MENTIONS_PATH.write_text(json.dumps(store, indent=2))
 
 
-def track_usage(tweet_reads: int = 0, user_reads: int = 0) -> dict:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    usage = {}
-    if USAGE_PATH.exists():
-        usage = json.loads(USAGE_PATH.read_text())
-    if today not in usage:
-        usage[today] = {"tweet_reads": 0, "user_reads": 0, "est_cost": 0.0}
-    usage[today]["tweet_reads"] += tweet_reads
-    usage[today]["user_reads"] += user_reads
-    usage[today]["est_cost"] = (usage[today]["tweet_reads"] * 0.005 +
-                                 usage[today]["user_reads"] * 0.01)
-    USAGE_PATH.write_text(json.dumps(usage, indent=2))
-    return usage[today]
-
-
-def budget_warning(config: dict):
-    """Print budget warning at 50%, 80%, 100% thresholds."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    budget = config.get("daily_budget", 0.25)
-    if not USAGE_PATH.exists() or budget <= 0:
-        return
-    usage = json.loads(USAGE_PATH.read_text())
-    if today not in usage:
-        return
-    cost = usage[today].get("est_cost", 0.0)
-    pct = cost / budget * 100
-    if pct >= 100:
-        print(f"[!] BUDGET EXCEEDED: ${cost:.3f} / ${budget:.2f} ({pct:.0f}%)")
-    elif pct >= 80:
-        print(f"[!] Budget warning: ${cost:.3f} / ${budget:.2f} ({pct:.0f}%) — approaching limit")
-    elif pct >= 50:
-        print(f"[i] Budget note: ${cost:.3f} / ${budget:.2f} ({pct:.0f}%) used today")
-
-
-def check_budget(config: dict, force: bool = False) -> bool:
-    if force:
-        return True
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if USAGE_PATH.exists():
-        usage = json.loads(USAGE_PATH.read_text())
-        if today in usage and usage[today]["est_cost"] >= config.get("daily_budget", 0.25):
-            print(f"Daily budget exceeded (${usage[today]['est_cost']:.3f} / ${config['daily_budget']:.2f})")
-            print("Use --force to override.")
-            return False
-    return True
-
-
-def format_time(dt) -> str:
-    if isinstance(dt, str):
-        dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
-    return dt.astimezone().strftime("%Y-%m-%d %H:%M %Z")
-
-
-def time_ago(dt) -> str:
-    if isinstance(dt, str):
-        dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
-    now = datetime.now(timezone.utc)
-    diff = now - dt
-    if diff.total_seconds() < 60:
-        return f"{int(diff.total_seconds())}s ago"
-    if diff.total_seconds() < 3600:
-        return f"{int(diff.total_seconds() / 60)}m ago"
-    if diff.total_seconds() < 86400:
-        return f"{int(diff.total_seconds() / 3600)}h ago"
-    return f"{diff.days}d ago"
-
-
-def format_number(n: int) -> str:
-    if n >= 1_000_000:
-        return f"{n/1_000_000:.1f}M"
-    if n >= 10_000:
-        return f"{n/1_000:.1f}K"
-    return f"{n:,}"
-
-
 def cmd_recent(args):
     config = load_config()
     if not config:
         return
+
+    force = args.force or args.no_budget
+    suppress = args.no_budget
 
     if args.dry_run:
         cost = "$0.005" if not args.context else "$0.005-0.030"
@@ -153,10 +57,10 @@ def cmd_recent(args):
         print(f"  Would cost: ~{cost} (1 tweet read{' + context lookups' if args.context else ''})")
         if args.context:
             print(f"  Tip: skip --context to save ~$0.025 — only adds parent tweet text")
-        budget_warning(config)
+        budget_warning(config, suppress=suppress)
         return
 
-    if not check_budget(config, args.force):
+    if not check_budget(config, force):
         return
 
     store = load_store()
@@ -183,19 +87,12 @@ def cmd_recent(args):
     try:
         resp = client.get_users_mentions(**kwargs)
         api_calls = 1
-    except tweepy.errors.HTTPException as e:
-        if "402" in str(e):
-            print("Error: No credits on your X developer account.")
-            print("Add credits at https://developer.x.com to use tweet endpoints.")
-            return
-        print(f"Error: {e}")
-        return
     except tweepy.errors.TweepyException as e:
-        print(f"Error: {e}")
+        handle_api_error(e)
         return
 
     day_usage = track_usage(tweet_reads=api_calls)
-    budget_warning(config)
+    budget_warning(config, suppress=suppress)
 
     # Build author lookup from includes
     authors = {}
@@ -344,6 +241,7 @@ def print_mention(m: dict, index: int):
 def main():
     parser = argparse.ArgumentParser(description="X mentions — replies & mentions")
     parser.add_argument("--force", action="store_true", help="Override daily budget guard")
+    parser.add_argument("--no-budget", action="store_true", help="Skip all budget checks and warnings")
     parser.add_argument("--no-cache", action="store_true", help="Skip local store")
     parser.add_argument("--dry-run", action="store_true", help="Show estimated cost without making API calls")
     subparsers = parser.add_subparsers(dest="command", required=True)

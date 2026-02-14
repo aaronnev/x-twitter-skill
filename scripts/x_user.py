@@ -15,10 +15,12 @@ from pathlib import Path
 
 import tweepy
 
-CONFIG_DIR = Path.home() / ".openclaw" / "skills-config" / "x-twitter"
-CONFIG_PATH = CONFIG_DIR / "config.json"
-DATA_DIR = CONFIG_DIR / "data"
-USAGE_PATH = DATA_DIR / "usage.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from x_common import (
+    load_config, save_config, get_client,
+    track_usage, budget_warning, check_budget,
+    format_number, handle_api_error,
+)
 
 USER_FIELDS = [
     "created_at", "description", "location", "public_metrics",
@@ -26,106 +28,32 @@ USER_FIELDS = [
 ]
 
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-
-
-def load_config() -> dict | None:
-    if not CONFIG_PATH.exists():
-        print(f"Error: No config found at {CONFIG_PATH}")
-        print(f"Run: uv run {SCRIPT_DIR / 'x_setup.py'}")
-        return None
-    return json.loads(CONFIG_PATH.read_text())
-
-
-def save_config(config: dict):
-    CONFIG_PATH.write_text(json.dumps(config, indent=2))
-
-
-def get_client(config: dict) -> tweepy.Client:
-    return tweepy.Client(
-        bearer_token=config.get("bearer_token"),
-        consumer_key=config["api_key"],
-        consumer_secret=config["api_secret"],
-        access_token=config["access_token"],
-        access_token_secret=config["access_secret"],
-        wait_on_rate_limit=True,
-    )
-
-
-def track_usage(tweet_reads: int = 0, user_reads: int = 0):
-    """Track daily API usage."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    usage = {}
-    if USAGE_PATH.exists():
-        usage = json.loads(USAGE_PATH.read_text())
-    if today not in usage:
-        usage[today] = {"tweet_reads": 0, "user_reads": 0, "est_cost": 0.0}
-    usage[today]["tweet_reads"] += tweet_reads
-    usage[today]["user_reads"] += user_reads
-    usage[today]["est_cost"] = (usage[today]["tweet_reads"] * 0.005 +
-                                 usage[today]["user_reads"] * 0.01)
-    USAGE_PATH.write_text(json.dumps(usage, indent=2))
-    return usage[today]
-
-
-def budget_warning(config: dict):
-    """Print budget warning at 50%, 80%, 100% thresholds."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    budget = config.get("daily_budget", 0.25)
-    if not USAGE_PATH.exists() or budget <= 0:
-        return
-    usage = json.loads(USAGE_PATH.read_text())
-    if today not in usage:
-        return
-    cost = usage[today].get("est_cost", 0.0)
-    pct = cost / budget * 100
-    if pct >= 100:
-        print(f"[!] BUDGET EXCEEDED: ${cost:.3f} / ${budget:.2f} ({pct:.0f}%)")
-    elif pct >= 80:
-        print(f"[!] Budget warning: ${cost:.3f} / ${budget:.2f} ({pct:.0f}%) — approaching limit")
-    elif pct >= 50:
-        print(f"[i] Budget note: ${cost:.3f} / ${budget:.2f} ({pct:.0f}%) used today")
-
-
-def check_budget(config: dict) -> bool:
-    """Check if daily budget is exceeded. Returns True if OK to proceed."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if USAGE_PATH.exists():
-        usage = json.loads(USAGE_PATH.read_text())
-        if today in usage and usage[today]["est_cost"] >= config.get("daily_budget", 0.25):
-            print(f"Daily budget exceeded (${usage[today]['est_cost']:.3f} / ${config['daily_budget']:.2f})")
-            print("Use --force to override.")
-            return False
-    return True
-
-
-def format_number(n: int) -> str:
-    if n >= 1_000_000:
-        return f"{n/1_000_000:.1f}M"
-    if n >= 10_000:
-        return f"{n/1_000:.1f}K"
-    return f"{n:,}"
-
-
 def cmd_me(args):
     config = load_config()
     if not config:
         return
 
+    force = args.force or args.no_budget
+    suppress = args.no_budget
+
     if args.dry_run:
         print("[DRY RUN] x_user.py me")
         print(f"  Would cost: ~$0.010 (1 user read)")
-        budget_warning(config)
+        budget_warning(config, suppress=suppress)
         return
 
-    if not args.force and not check_budget(config):
+    if not check_budget(config, force):
         return
 
     client = get_client(config)
-    resp = client.get_me(user_fields=USER_FIELDS, user_auth=True)
+    try:
+        resp = client.get_me(user_fields=USER_FIELDS, user_auth=True)
+    except tweepy.errors.TweepyException as e:
+        handle_api_error(e)
+        return
+
     day_usage = track_usage(user_reads=1)
-    budget_warning(config)
+    budget_warning(config, suppress=suppress)
 
     if not resp.data:
         print("Error: Could not retrieve profile.")
@@ -153,15 +81,14 @@ def cmd_me(args):
 
     # Follower delta tracking
     delta_str = ""
-    if True:  # Always show delta if history exists
-        history = config.get("follower_history", [])
-        if history:
-            last = history[-1]
-            diff = followers - last["followers"]
-            if diff > 0:
-                delta_str = f"  (+{diff} since {last['date']})"
-            elif diff < 0:
-                delta_str = f"  ({diff} since {last['date']})"
+    history = config.get("follower_history", [])
+    if history:
+        last = history[-1]
+        diff = followers - last["followers"]
+        if diff > 0:
+            delta_str = f"  (+{diff} since {last['date']})"
+        elif diff < 0:
+            delta_str = f"  ({diff} since {last['date']})"
 
     print(f"Followers:  {format_number(followers)}{delta_str}")
     print(f"Following:  {format_number(following)}")
@@ -172,7 +99,6 @@ def cmd_me(args):
 
     # Track follower history if --track
     if args.track:
-        history = config.get("follower_history", [])
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         # Don't duplicate same-day entries
         if not history or history[-1]["date"] != today:
@@ -196,13 +122,16 @@ def cmd_lookup(args):
     if not config:
         return
 
+    force = args.force or args.no_budget
+    suppress = args.no_budget
+
     if args.dry_run:
         print(f"[DRY RUN] x_user.py lookup {args.username}")
         print(f"  Would cost: ~$0.010 (1 user read)")
-        budget_warning(config)
+        budget_warning(config, suppress=suppress)
         return
 
-    if not args.force and not check_budget(config):
+    if not check_budget(config, force):
         return
 
     client = get_client(config)
@@ -210,14 +139,12 @@ def cmd_lookup(args):
 
     try:
         resp = client.get_user(username=username, user_fields=USER_FIELDS)
-    except tweepy.errors.HTTPException as e:
-        if "402" in str(e):
-            print("Error: No credits on your X developer account.")
-            print("Add credits at https://developer.x.com to use this endpoint.")
-            return
-        raise
+    except tweepy.errors.TweepyException as e:
+        handle_api_error(e)
+        return
+
     day_usage = track_usage(user_reads=1)
-    budget_warning(config)
+    budget_warning(config, suppress=suppress)
 
     if not resp.data:
         print(f"Error: User @{username} not found.")
@@ -250,6 +177,7 @@ def cmd_lookup(args):
 def main():
     parser = argparse.ArgumentParser(description="X user profile info")
     parser.add_argument("--force", action="store_true", help="Override daily budget guard")
+    parser.add_argument("--no-budget", action="store_true", help="Skip all budget checks and warnings")
     parser.add_argument("--dry-run", action="store_true", help="Show estimated cost without making API calls")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

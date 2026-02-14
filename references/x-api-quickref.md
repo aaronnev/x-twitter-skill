@@ -9,6 +9,14 @@
 | User Mentions | `GET /2/users/:id/mentions` | OAuth 1.0a | ~$0.005 |
 | Get User by Username | `GET /2/users/by/username/:username` | Bearer | ~$0.01 |
 | Get Tweet | `GET /2/tweets/:id` | Bearer/OAuth | ~$0.005 |
+| Batch Get Tweets | `GET /2/tweets?ids=id1,id2,...` | Bearer/OAuth | ~$0.005 |
+| Search Recent | `GET /2/tweets/search/recent` | Bearer | ~$0.005 |
+| Create Tweet | `POST /2/tweets` | OAuth 1.0a | Free |
+| Delete Tweet | `DELETE /2/tweets/:id` | OAuth 1.0a | Free |
+| Get Bookmarks | `GET /2/users/:id/bookmarks` | OAuth 1.0a | ~$0.005 |
+| Bookmark Tweet | `POST /2/users/:id/bookmarks` | OAuth 1.0a | Free |
+| Remove Bookmark | `DELETE /2/users/:id/bookmarks/:tweet_id` | OAuth 1.0a | Free |
+| Usage Stats | `GET /2/usage/tweets` | Bearer | Free |
 
 ## Tweet Fields
 
@@ -23,6 +31,15 @@ Request via `tweet.fields` parameter:
 | `in_reply_to_user_id` | User ID being replied to |
 | `referenced_tweets` | Array of {type, id} — "replied_to", "quoted", "retweeted" |
 | `author_id` | Author's user ID |
+
+## Expansions (FREE — included in same request)
+
+| Expansion | Returns | Use Case |
+|-----------|---------|----------|
+| `author_id` | User object | Get tweet author's name, handle, followers |
+| `referenced_tweets.id` | Tweet object(s) | Get parent/quoted tweet content |
+| `referenced_tweets.id.author_id` | User object(s) | Get authors of referenced tweets |
+| `in_reply_to_user_id` | User object | Get user being replied to |
 
 ## Public Metrics (tweet)
 
@@ -62,6 +79,8 @@ Per-app rate limits (15-minute windows):
 | User Mentions | 450 req/15min |
 | Users Lookup | 300 req/15min |
 | Tweet Lookup | 300 req/15min |
+| Search Recent | 450 req/15min |
+| Create Tweet | 200 req/15min (per user) |
 
 tweepy's `wait_on_rate_limit=True` auto-handles 429 responses.
 
@@ -69,11 +88,13 @@ tweepy's `wait_on_rate_limit=True` auto-handles 429 responses.
 
 | Operation | Cost |
 |-----------|------|
-| Post reads (tweets) | $0.005/request |
+| Post reads (tweets) | $0.005/request (up to 100 tweets per request) |
 | User reads | $0.01/request |
 | DM reads | $0.01/request |
+| Post creation | Free (included in API access) |
+| Bookmarking | Free (write action) |
 
-Note: Each request can return up to 100 tweets (via `max_results`).
+Note: Batch lookup `GET /2/tweets?ids=id1,...id100` costs $0.005 for up to 100 tweets — not $0.005 per tweet.
 
 ## Search Operators (for reference)
 
@@ -90,7 +111,17 @@ Useful if combining with search endpoints:
 
 | Method | When | Keys Needed |
 |--------|------|-------------|
-| OAuth 1.0a (User Context) | Own tweets, mentions, get_me | API Key + Secret + Access Token + Secret |
-| Bearer Token (App Context) | Public user lookup, public tweets | Bearer Token only |
+| OAuth 1.0a (User Context) | Own tweets, mentions, get_me, posting, bookmarks | API Key + Secret + Access Token + Secret |
+| Bearer Token (App Context) | Public user lookup, public tweets, search | Bearer Token only |
 
-OAuth 1.0a is required for `impression_count` on your own tweets.
+OAuth 1.0a is required for `impression_count` on your own tweets and all write actions (posting, bookmarking).
+
+## Thread Reconstruction
+
+`conversation_id` is the key — every reply in a thread shares the same conversation_id.
+
+**Best method (< 7 days):** `GET /2/tweets/search/recent?query=conversation_id:ID from:USERNAME`
+- Returns all thread parts in one $0.005 call
+- Sort by `created_at` ascending for reading order
+
+**Fallback (older threads):** Follow `referenced_tweets` chain upward, batch IDs into `GET /2/tweets?ids=...`

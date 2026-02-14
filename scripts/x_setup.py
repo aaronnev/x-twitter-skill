@@ -16,14 +16,21 @@ from pathlib import Path
 
 import tweepy
 
-CONFIG_DIR = Path.home() / ".openclaw" / "skills-config" / "x-twitter"
-CONFIG_PATH = CONFIG_DIR / "config.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from x_common import CONFIG_DIR, CONFIG_PATH, DATA_DIR, USAGE_PATH, VERSION
+
 ENV_PATH = Path.home() / ".openclaw" / ".env"
 
 BUDGET_TIERS = {
     "lite": {"daily_budget": 0.03, "desc": "Morning brief only, ~$0.50/mo"},
     "standard": {"daily_budget": 0.10, "desc": "Brief + a few checks/day, ~$1.50/mo"},
     "intense": {"daily_budget": 0.25, "desc": "Frequent checks, hourly monitoring, ~$5/mo"},
+}
+
+BUDGET_MODES = {
+    "guarded": "Warn at 50/80/100%, block at limit (default)",
+    "relaxed": "Warn at 50/80/100%, never block",
+    "unlimited": "No warnings, no blocks",
 }
 
 
@@ -142,6 +149,7 @@ def cmd_setup(args):
         "bearer_token": bearer_token,
         "tier": tier,
         "daily_budget": budget["daily_budget"],
+        "budget_mode": "guarded",
         "setup_at": datetime.now(timezone.utc).isoformat(),
         "last_timeline_id": None,
         "last_mention_id": None,
@@ -165,15 +173,6 @@ def cmd_setup(args):
         print(f"  The skill pulls incrementally (newest first), so daily use is ~$0.02/day.")
 
 
-def load_usage() -> dict:
-    """Load usage data."""
-    DATA_DIR = CONFIG_DIR / "data"
-    USAGE_PATH = DATA_DIR / "usage.json"
-    if USAGE_PATH.exists():
-        return json.loads(USAGE_PATH.read_text())
-    return {}
-
-
 def cmd_spend_report(args):
     """Show weekly spend summary."""
     if not CONFIG_PATH.exists():
@@ -181,13 +180,16 @@ def cmd_spend_report(args):
         sys.exit(1)
 
     config = json.loads(CONFIG_PATH.read_text())
-    usage = load_usage()
+    usage = {}
+    if USAGE_PATH.exists():
+        usage = json.loads(USAGE_PATH.read_text())
     if not usage:
         print("No usage data yet. Make some API calls first.")
         return
 
     today = datetime.now(timezone.utc)
     daily_budget = config.get("daily_budget", 0.10)
+    mode = config.get("budget_mode", "guarded")
 
     # Determine period
     days = args.days if args.days else 7
@@ -197,6 +199,7 @@ def cmd_spend_report(args):
     total_cost = 0.0
     total_tweet_reads = 0
     total_user_reads = 0
+    total_posts_created = 0
     day_count = 0
 
     for i in range(days):
@@ -206,9 +209,11 @@ def cmd_spend_report(args):
             cost = d.get("est_cost", 0.0)
             tr = d.get("tweet_reads", 0)
             ur = d.get("user_reads", 0)
+            pc = d.get("posts_created", 0)
             total_cost += cost
             total_tweet_reads += tr
             total_user_reads += ur
+            total_posts_created += pc
             day_count += 1
             pct = (cost / daily_budget * 100) if daily_budget > 0 else 0
             bar = "#" * min(int(pct / 5), 20)
@@ -223,12 +228,30 @@ def cmd_spend_report(args):
     print(f"Budget:    ${budget_total:.2f} ({days}d x ${daily_budget:.2f})")
     pct_used = (total_cost / budget_total * 100) if budget_total > 0 else 0
     print(f"Used:      {pct_used:.1f}% of budget")
-    print(f"API calls: {total_tweet_reads} tweet reads, {total_user_reads} user reads")
+    print(f"API calls: {total_tweet_reads} tweet reads, {total_user_reads} user reads, {total_posts_created} posts created")
+    print(f"Budget mode: {mode}")
 
     # Monthly projection
     if day_count > 0:
         monthly = (total_cost / day_count) * 30
         print(f"\nProjected monthly: ~${monthly:.2f}")
+
+
+def cmd_budget_mode(args):
+    """Set budget mode."""
+    if not CONFIG_PATH.exists():
+        print(f"No config found. Run setup first.")
+        sys.exit(1)
+
+    config = json.loads(CONFIG_PATH.read_text())
+    old_mode = config.get("budget_mode", "guarded")
+    new_mode = args.mode
+
+    config["budget_mode"] = new_mode
+    CONFIG_PATH.write_text(json.dumps(config, indent=2))
+
+    print(f"Budget mode: {old_mode} -> {new_mode}")
+    print(f"  {BUDGET_MODES[new_mode]}")
 
 
 def cmd_check(args):
@@ -242,6 +265,7 @@ def cmd_check(args):
     print(f"Config: {CONFIG_PATH}")
     print(f"Handle: @{config.get('handle', '?')}")
     print(f"Tier: {config.get('tier', '?')} (${config.get('daily_budget', '?')}/day)")
+    print(f"Budget mode: {config.get('budget_mode', 'guarded')}")
     print(f"Setup: {config.get('setup_at', '?')}")
     print()
 
@@ -283,10 +307,21 @@ def main():
     parser.add_argument("--tier", choices=["lite", "standard", "intense"], help="Budget tier")
     parser.add_argument("--spend-report", action="store_true", help="Show spend summary")
     parser.add_argument("--days", type=int, default=7, help="Days for spend report (default: 7)")
+    parser.add_argument("--budget-mode", dest="budget_mode",
+                        choices=["guarded", "relaxed", "unlimited"],
+                        help="Set budget enforcement mode")
+    parser.add_argument("--version", action="store_true", help="Print version")
     args = parser.parse_args()
 
-    if args.spend_report:
+    if args.version:
+        print(f"x-twitter v{VERSION}")
+    elif args.spend_report:
         cmd_spend_report(args)
+    elif args.budget_mode:
+        # Create a simple namespace for cmd_budget_mode
+        class ModeArgs:
+            mode = args.budget_mode
+        cmd_budget_mode(ModeArgs())
     elif args.check:
         cmd_check(args)
     elif args.show:
