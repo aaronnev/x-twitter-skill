@@ -1,6 +1,10 @@
 # X (Twitter) Personal Analytics Skill
 
-Personal X/Twitter analytics for [OpenClaw](https://openclaw.ai) — monitor your posts, engagement, mentions, and followers. Built for daily briefings and accountability.
+Give your AI agent eyes on your X account — analytics, posts, mentions, followers — for ~$1-2/month. Official API only, no scraping, no suspension risk.
+
+Built after [@nikitabier confirmed](https://x.com/nikitabier/status/2022502068486074617) automated scraping will get accounts suspended. This skill uses only the official X API v2.
+
+Works with any AI agent — [OpenClaw](https://openclaw.ai), Claude Code, Codex, or anything that reads a [SKILL.md](http://skill.md/).
 
 ## What It Does
 
@@ -8,7 +12,13 @@ Personal X/Twitter analytics for [OpenClaw](https://openclaw.ai) — monitor you
 - **Mentions**: Who's replying to or quoting you, with their follower count
 - **Follower Tracking**: Daily follower count with delta tracking over time
 - **Accountability**: Checks if you're spending too much time on X when you should be working
-- **Cost Optimized**: Persistent local store + incremental fetching = minimal API costs (~$0.60-1.50/mo)
+- **Cost Optimized**: Persistent local store + incremental fetching = minimal API costs (~$1-2/mo)
+
+### Why Not Scraping / Bird CLI?
+
+X is actively detecting and suspending accounts that use automated scraping, cookie-based tools, or browser automation. The official API is the only safe path for programmatic access. This skill uses OAuth 1.0a with your own API keys — no cookies, no headless browsers, no risk.
+
+<img src="assets/nikitabier-api-vs-scraping.png" alt="@nikitabier: Use the official API all you want. But any form of scraping or search that is automated will get caught currently." width="500">
 
 ## Setup
 
@@ -40,7 +50,7 @@ This skill minimizes costs with:
 - **Daily budget guard**: blocks requests when daily limit is hit
 - **Budget tiers**: lite ($0.03/day), standard ($0.10/day), intense ($0.25/day)
 
-Typical monthly cost: **$0.60 - $1.50** for daily briefings.
+Typical monthly cost: **~$1-2** for daily briefings.
 
 ## Commands
 
@@ -65,7 +75,7 @@ Typical monthly cost: **$0.60 - $1.50** for daily briefings.
 The skill talks directly to the X API v2 using OAuth 1.0a (your API keys). No middlemen, no third-party proxies.
 
 ```
-You ask OpenClaw → OpenClaw reads SKILL.md → runs the right script via uv
+You ask your agent → Agent reads SKILL.md → runs the right script via uv
                                                       ↓
                                               Script hits X API v2
                                                       ↓
@@ -122,7 +132,7 @@ x-twitter/
 
 - [uv](https://astral.sh/uv) — Python package runner (handles dependencies automatically)
 - X API developer account with credits loaded at [developer.x.com](https://developer.x.com)
-- [OpenClaw](https://openclaw.ai) (or any agent platform that reads SKILL.md)
+- Any AI agent that reads [SKILL.md](http://skill.md/) ([OpenClaw](https://openclaw.ai), Claude Code, Codex, etc.)
 
 ## Credits
 
