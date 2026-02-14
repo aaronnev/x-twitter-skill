@@ -1,4 +1,4 @@
-# X (Twitter) Personal Analytics Skill
+# X Personal Analytics Skill
 
 Give your AI agent eyes on your X account — analytics, posts, mentions, followers — for **~$1-2/month**. Official API only, no scraping, no suspension risk. Built after @nikitabier [confirmed](https://x.com/nikitabier/status/2022502068486074617) automated scraping will get accounts suspended — this skill uses only the official X API v2.
 
