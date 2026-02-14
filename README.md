@@ -1,25 +1,31 @@
 # X Personal Analytics Skill
 
-Your AI agent can't read Twitter. Links are opaque, threads are a mess, and there's no way to check how your posts are doing without opening the app and doomscrolling.
+Your AI agent can't read Twitter. And when it tries via the API, it burns through $25 on a single prompt.
 
-This fixes that. It gives your agent ([Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a SKILL.md) full read access to your X account via the official API. No scraping, no browser automation, no suspension risk. Read-only — it never posts on your behalf.
+This skill gives your agent read-only access to X — tweets, threads, mentions, analytics — for about **$1-2/month**. Smart caching means tweets are only fetched once, and budget controls make sure it stays that way. You set the daily limit, and the skill won't go over it.
 
-Costs about **$1-2/month**.
+Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a SKILL.md. Official API only, no scraping, no suspension risk.
 
 > Agents: see [AGENTS.md](AGENTS.md) for command reference.
 
 ## What It Does
 
-- **Read any tweet** — paste a URL, get the full content. No browser, no login, no screenshots
-- **Thread reconstruction** — fetch entire conversations automatically
-- **Morning briefing** — one command: posts + mentions + profile + follower delta (~$0.02)
-- **Timeline analytics** — your recent posts with full engagement metrics
-- **Mentions** — who's replying to or quoting you, with their follower count
-- **Bookmarks** — save, list, and manage your bookmarked posts
-- **Follower tracking** — daily count with delta over time
-- **Accountability** — tells you if you're spending too much time on X
-- **Budget controls** — three modes (guarded / relaxed / unlimited), daily spend tracking, dry-run on every command
-- **Smart caching** — every tweet is stored locally on first fetch and never re-fetched. Incremental pulls mean only new content costs money. This is how it stays at ~$1-2/mo instead of burning $25 on a single prompt
+**Read and understand X content:**
+- Read any tweet by URL — full content, no browser, no login
+- Reconstruct entire threads automatically
+- Save and manage bookmarks
+
+**Monitor your account:**
+- Morning briefing — posts, mentions, profile, follower delta in one command (~$0.02)
+- Timeline analytics with full engagement metrics
+- See who's replying to or quoting you, and how big their audience is
+- Track follower count over time
+
+**Keep costs under control:**
+- Three budget modes — guarded (stops at limit), relaxed (warns only), unlimited
+- Every tweet cached locally and never re-fetched
+- Dry-run on any command to preview cost before calling the API
+- Daily spend tracking with weekly reports
 
 ## Getting Started
 
