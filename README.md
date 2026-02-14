@@ -1,6 +1,6 @@
-# X Analytics Skill
+# X Smart Read
 
-Give your AI agent read-only access to your X account without blowing your API budget. Smart caching and budget controls keep it at **~$1-2/month**. Official API only, no scraping.
+Give your AI agent read access to X without blowing your API budget. Smart caching and budget controls keep it at **~$1-2/month**. Official API only, no scraping.
 
 Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai), or anything that reads a [SKILL.md](SKILL.md) · [AGENTS.md](AGENTS.md)
 
@@ -26,7 +26,7 @@ Works with [Claude Code](https://claude.ai/code), [OpenClaw](https://openclaw.ai
 ## Getting Started
 
 ```bash
-git clone https://github.com/aaronnev/x-twitter-skill.git x-twitter
+git clone https://github.com/aaronnev/x-smart-read.git x-twitter
 ```
 
 Then follow the **[Setup Guide →](SETUP.md)** — walks you through creating an X Developer account, getting your API keys, and configuring your budget. Takes about 10 minutes.
