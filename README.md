@@ -184,7 +184,7 @@ x-twitter/
 
 Built by [@aaronnev_](https://x.com/aaronnev_) with [Claude Code](https://claude.ai/code) (Claude Opus 4.6).
 
-Uses [tweepy](https://github.com/tweepy/tweepy) for X API v2 access and [uv](https://github.com/astral-sh/uv) for zero-config Python script execution.
+Powered by [tweepy](https://github.com/tweepy/tweepy) and [uv](https://github.com/astral-sh/uv).
 
 ## License
 
