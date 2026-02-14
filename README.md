@@ -32,11 +32,11 @@ Your agent reads [SKILL.md](SKILL.md) and figures out the right script.
 
 ```bash
 git clone https://github.com/aaronnev/x-twitter-skill.git x-twitter
-cd x-twitter
-uv run scripts/x_setup.py   # walks you through everything
 ```
 
-Works with [OpenClaw](https://openclaw.ai), [Claude Code](https://claude.ai/code), or any agent that reads skill files. Need help? See **[SETUP.md](SETUP.md)** for the full walkthrough.
+Works with [OpenClaw](https://openclaw.ai), [Claude Code](https://claude.ai/code), or any agent that reads skill files.
+
+**[→ Setup guide](SETUP.md)** — step-by-step walkthrough for X Developer account, API keys, and budget configuration.
 
 ## Commands
 
