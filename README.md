@@ -148,4 +148,4 @@ Powered by [tweepy](https://github.com/tweepy/tweepy) and [uv](https://github.co
 
 ## License
 
-MIT
+Apache-2.0
