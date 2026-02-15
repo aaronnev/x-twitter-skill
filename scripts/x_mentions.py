@@ -247,7 +247,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     recent_p = subparsers.add_parser("recent", help="Recent mentions")
-    recent_p.add_argument("--max", type=int, default=20, help="Max mentions (default: 20)")
+    recent_p.add_argument("--max", type=int, default=100, help="Max mentions (default: 100)")
     recent_p.add_argument("--hours", type=int, help="Only mentions from last N hours")
     recent_p.add_argument("--context", action="store_true", help="Fetch parent tweet for replies (costs extra)")
 

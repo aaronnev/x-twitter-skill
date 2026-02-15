@@ -96,7 +96,7 @@ def cmd_briefing(args):
     try:
         resp = client.get_users_tweets(
             id=user_id,
-            max_results=10,
+            max_results=100,
             tweet_fields=TWEET_FIELDS,
             exclude=["retweets"],
             start_time=start_time,
@@ -124,7 +124,7 @@ def cmd_briefing(args):
     try:
         resp = client.get_users_mentions(
             id=user_id,
-            max_results=10,
+            max_results=100,
             tweet_fields=TWEET_FIELDS,
             expansions=["author_id"],
             user_fields=USER_FIELDS,

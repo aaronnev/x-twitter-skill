@@ -385,12 +385,12 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     recent_p = subparsers.add_parser("recent", help="Your recent posts with engagement")
-    recent_p.add_argument("--max", type=int, default=10, help="Max posts to show (default: 10)")
+    recent_p.add_argument("--max", type=int, default=100, help="Max posts to show (default: 100)")
     recent_p.add_argument("--hours", type=int, help="Only posts from last N hours")
 
     top_p = subparsers.add_parser("top", help="Top posts by engagement (from local store)")
     top_p.add_argument("--days", type=int, default=7, help="Look back N days (default: 7)")
-    top_p.add_argument("--max", type=int, default=10, help="Max posts (default: 10)")
+    top_p.add_argument("--max", type=int, default=100, help="Max posts (default: 100)")
 
     refresh_p = subparsers.add_parser("refresh", help="Re-fetch metrics for a specific tweet")
     refresh_p.add_argument("tweet_id", help="Tweet ID to refresh")
